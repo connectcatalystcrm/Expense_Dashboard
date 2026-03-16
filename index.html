@@ -596,5 +596,12 @@
   clearForm();
   load();
 </script>
+
+<script>
+  setInterval(() => {
+    window.parent.postMessage({ height: document.body.scrollHeight }, '*');
+  }, 500);
+</script>
+
 </body>
 </html>
