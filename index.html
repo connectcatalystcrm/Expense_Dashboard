@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Catalyst Intelligence — Expenditure Tracker</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&family=Barlow+Mono:wght@400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #050608;
+    --surface: #0d0f14;
+    --surface2: #141720;
+    --surface3: #1a1e28;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --blue: #4a9fd4;
+    --blue-light: #6cb8e8;
+    --blue-dark: #2e7aab;
+    --blue-dim: rgba(74,159,212,0.12);
+    --blue-dim2: rgba(74,159,212,0.06);
+    --white: #f0f2f5;
+    --text: #d8dce6;
+    --muted: #6a7080;
+    --wes: #4a9fd4;
+    --wes-dim: rgba(74,159,212,0.12);
+    --shane: #a0c8f0;
+    --shane-dim: rgba(160,200,240,0.10);
+    --danger: #e05555;
+    --success: #4ade80;
+    --warning: #f0b429;
+    --radius: 10px;
+    --font: 'Barlow', sans-serif;
+    --font-mono: 'Barlow Mono', monospace;
+  }
+
+  body { font-family: var(--font); background: var(--bg); color: var(--text); min-height: 100vh; font-size: 13px; line-height: 1.5; }
+
+  /* HEADER */
+  .header { display: flex; align-items: center; justify-content: space-between; padding: 16px 24px; border-bottom: 1px solid var(--border); background: var(--surface); position: sticky; top: 0; z-index: 100; }
+  .logo-wrap { display: flex; align-items: center; gap: 12px; }
+  .flask { width: 26px; height: 30px; position: relative; flex-shrink: 0; }
+  .flask-neck { width: 10px; height: 10px; background: var(--blue-light); margin: 0 auto; border-radius: 2px 2px 0 0; border-top: 2px solid rgba(255,255,255,0.3); }
+  .flask-body { width: 0; height: 0; border-left: 13px solid transparent; border-right: 13px solid transparent; border-top: 20px solid var(--blue); position: relative; }
+  .flask-body::after { content: ''; position: absolute; top: -14px; left: -5px; width: 6px; height: 6px; background: rgba(255,255,255,0.3); border-radius: 50%; }
+  .logo-name { font-family: var(--font); font-size: 15px; font-weight: 800; color: var(--white); letter-spacing: 0.06em; text-transform: uppercase; }
+  .logo-name span { color: var(--blue-light); }
+  .logo-sub { font-size: 10px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; }
+  .header-right { display: flex; align-items: center; gap: 10px; }
+  .header-right select { background: var(--surface2); border: 1px solid var(--border2); color: var(--text); font-family: var(--font); font-size: 11px; font-weight: 600; padding: 6px 10px; border-radius: 6px; outline: none; }
+
+  /* TABS */
+  .tabs { display: flex; gap: 2px; padding: 0 24px; border-bottom: 1px solid var(--border); background: var(--surface); overflow-x: auto; }
+  .tab { font-family: var(--font); font-size: 12px; font-weight: 600; color: var(--muted); padding: 12px 16px; border: none; background: none; cursor: pointer; border-bottom: 2px solid transparent; transition: all .15s; margin-bottom: -1px; letter-spacing: 0.05em; text-transform: uppercase; white-space: nowrap; }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--blue-light); border-bottom-color: var(--blue); }
+
+  /* LAYOUT */
+  .main { padding: 24px; max-width: 1100px; margin: 0 auto; }
+  .section { display: none; }
+  .section.active { display: block; }
+  .section-label { font-size: 10px; color: var(--muted); letter-spacing: 0.09em; text-transform: uppercase; font-weight: 600; margin-bottom: 10px; }
+
+  /* STAT CARDS */
+  .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+  .stat-label { font-size: 10px; color: var(--muted); letter-spacing: 0.09em; text-transform: uppercase; margin-bottom: 8px; font-weight: 600; }
+  .stat-value { font-family: var(--font); font-size: 24px; font-weight: 800; }
+  .stat-sub { font-size: 10px; color: var(--muted); margin-top: 4px; }
+  .stat-card.primary { background: var(--blue-dim2); border-color: rgba(74,159,212,0.25); }
+  .stat-card.primary .stat-value { color: var(--blue-light); }
+  .stat-card.wes { background: var(--wes-dim); border-color: rgba(74,159,212,0.2); }
+  .stat-card.wes .stat-value { color: var(--wes); }
+  .stat-card.shane { background: var(--shane-dim); border-color: rgba(160,200,240,0.2); }
+  .stat-card.shane .stat-value { color: var(--shane); }
+
+  /* BUDGET BAR */
+  .budget-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 20px; }
+  .budget-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .budget-title { font-size: 10px; color: var(--muted); letter-spacing: 0.09em; text-transform: uppercase; font-weight: 600; }
+  .budget-amounts { font-size: 12px; color: var(--muted); }
+  .budget-amounts b { color: var(--text); font-weight: 700; }
+  .budget-bar-track { height: 5px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+  .budget-bar-fill { height: 100%; border-radius: 3px; transition: width .4s; background: var(--blue); }
+  .budget-bar-fill.warn { background: var(--warning); }
+  .budget-bar-fill.danger { background: var(--danger); }
+  .budget-meta { display: flex; justify-content: space-between; margin-top: 8px; }
+  .budget-status { font-size: 11px; color: var(--muted); }
+
+  /* FORM */
+  .form-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 20px; }
+  .form-head { font-size: 14px; font-weight: 700; color: var(--white); margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-group.span2 { grid-column: span 2; }
+  label { font-size: 10px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600; }
+  input, select, textarea { background: var(--surface2); border: 1px solid var(--border2); border-radius: 6px; color: var(--text); font-family: var(--font); font-size: 13px; padding: 9px 11px; width: 100%; outline: none; transition: border-color .15s; font-weight: 500; }
+  input:focus, select:focus, textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 2px var(--blue-dim); }
+  select option { background: #141720; }
+  textarea { resize: vertical; min-height: 64px; }
+  .form-actions { display: flex; gap: 10px; margin-top: 16px; }
+  .btn { font-family: var(--font); font-size: 12px; font-weight: 700; padding: 9px 20px; border-radius: 6px; border: 1px solid; cursor: pointer; transition: all .15s; letter-spacing: 0.07em; text-transform: uppercase; }
+  .btn-primary { background: var(--blue); color: #050608; border-color: var(--blue); }
+  .btn-primary:hover { background: var(--blue-light); border-color: var(--blue-light); }
+  .btn-ghost { background: transparent; color: var(--muted); border-color: var(--border2); }
+  .btn-ghost:hover { color: var(--text); border-color: var(--border); }
+  .btn-danger { background: transparent; color: var(--danger); border-color: rgba(224,85,85,0.3); font-size: 11px; padding: 4px 10px; }
+  .btn-danger:hover { background: rgba(224,85,85,0.1); }
+
+  /* TABLE */
+  .table-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .table-header { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: 8px; }
+  .table-title { font-size: 10px; color: var(--muted); letter-spacing: 0.09em; text-transform: uppercase; font-weight: 600; }
+  .filter-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .filter-row select { width: auto; padding: 5px 9px; font-size: 11px; }
+  table { width: 100%; border-collapse: collapse; }
+  th { font-size: 10px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; text-align: left; padding: 10px 18px; border-bottom: 1px solid var(--border); font-weight: 600; }
+  td { padding: 11px 18px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(74,159,212,0.03); }
+  .amount-cell { font-weight: 800; font-size: 14px; color: var(--blue-light); }
+  .empty-state { text-align: center; color: var(--muted); padding: 48px; font-size: 13px; }
+
+  /* BADGES */
+  .badge { display: inline-block; font-size: 10px; padding: 3px 9px; border-radius: 4px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+  .badge-wes { background: var(--wes-dim); color: var(--wes); border: 1px solid rgba(74,159,212,0.3); }
+  .badge-shane { background: var(--shane-dim); color: var(--shane); border: 1px solid rgba(160,200,240,0.25); }
+
+  /* CATEGORY COLORS */
+  .cat-ads { color: #c084fc; font-weight: 600; }
+  .cat-tools { color: var(--blue-light); font-weight: 600; }
+  .cat-hosting { color: #4ade80; font-weight: 600; }
+  .cat-contractors { color: #fb923c; font-weight: 600; }
+  .cat-software { color: #a78bfa; font-weight: 600; }
+  .cat-ops { color: #f472b6; font-weight: 600; }
+  .cat-misc { color: var(--muted); font-weight: 600; }
+
+  /* REPORTS */
+  .report-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .report-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; }
+  .report-card-title { font-size: 10px; color: var(--muted); letter-spacing: 0.09em; text-transform: uppercase; font-weight: 600; margin-bottom: 14px; }
+  .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .bar-row-label { font-size: 12px; color: var(--text); min-width: 100px; font-weight: 500; }
+  .bar-track { flex: 1; height: 4px; background: var(--surface3); border-radius: 2px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 2px; transition: width .4s; }
+  .bar-row-val { font-size: 12px; color: var(--muted); min-width: 70px; text-align: right; font-weight: 500; }
+
+  /* MONTH TABS */
+  .month-tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 20px; }
+  .month-btn { font-family: var(--font); font-size: 10px; font-weight: 700; padding: 5px 12px; border: 1px solid var(--border2); border-radius: 4px; background: none; color: var(--muted); cursor: pointer; transition: all .15s; letter-spacing: 0.06em; text-transform: uppercase; }
+  .month-btn:hover { color: var(--text); }
+  .month-btn.active { background: var(--blue-dim); color: var(--blue-light); border-color: rgba(74,159,212,0.35); }
+
+  /* SETTINGS */
+  .settings-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 14px; }
+  .settings-title { font-size: 10px; color: var(--muted); letter-spacing: 0.09em; text-transform: uppercase; font-weight: 600; margin-bottom: 14px; }
+  .settings-row { display: flex; align-items: center; justify-content: space-between; padding: 11px 0; border-bottom: 1px solid var(--border); gap: 16px; }
+  .settings-row:last-child { border-bottom: none; padding-bottom: 0; }
+  .settings-label { font-size: 13px; color: var(--text); font-weight: 600; }
+  .settings-sub { font-size: 11px; color: var(--muted); margin-top: 2px; line-height: 1.4; }
+
+  /* TOAST */
+  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--surface2); border: 1px solid var(--border2); border-radius: 8px; padding: 11px 18px; font-size: 12px; font-weight: 600; color: var(--text); transform: translateY(80px); opacity: 0; transition: all .25s ease; z-index: 999; }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { border-color: rgba(74,222,128,0.3); color: var(--success); }
+  .toast.error { border-color: rgba(224,85,85,0.3); color: var(--danger); }
+
+  @media (max-width: 600px) {
+    .form-grid { grid-template-columns: 1fr; }
+    .form-group.span2 { grid-column: span 1; }
+    .report-grid { grid-template-columns: 1fr; }
+    .main { padding: 14px; }
+    .header { padding: 12px 14px; }
+    .tabs { padding: 0 14px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo-wrap">
+    <div class="flask">
+      <div class="flask-neck"></div>
+      <div class="flask-body"></div>
+    </div>
+    <div>
+      <div class="logo-name">CATALYST <span>INTELLIGENCE</span></div>
+      <div class="logo-sub">Expenditure Tracker</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <select id="month-select-global" onchange="setGlobalMonth(this.value)">
+      <option value="all">All time</option>
+    </select>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('dashboard')">Dashboard</button>
+  <button class="tab" onclick="switchTab('add')">+ Add Expense</button>
+  <button class="tab" onclick="switchTab('log')">Log</button>
+  <button class="tab" onclick="switchTab('reports')">Reports</button>
+  <button class="tab" onclick="switchTab('settings')">Settings</button>
+</div>
+
+<div class="main">
+
+  <!-- DASHBOARD -->
+  <div class="section active" id="section-dashboard">
+    <div class="summary-grid">
+      <div class="stat-card primary"><div class="stat-label">Total spent</div><div class="stat-value" id="stat-total">$0</div><div class="stat-sub" id="stat-period">this period</div></div>
+      <div class="stat-card wes"><div class="stat-label">Wes paid</div><div class="stat-value" id="stat-wes">$0</div><div class="stat-sub" id="stat-wes-pct">—</div></div>
+      <div class="stat-card shane"><div class="stat-label">Shane paid</div><div class="stat-value" id="stat-shane">$0</div><div class="stat-sub" id="stat-shane-pct">—</div></div>
+      <div class="stat-card"><div class="stat-label">Transactions</div><div class="stat-value" id="stat-count">0</div><div class="stat-sub">expenses logged</div></div>
+    </div>
+
+    <div class="budget-section">
+      <div class="budget-header">
+        <span class="budget-title">Monthly budget</span>
+        <span class="budget-amounts"><b id="bud-spent">$0</b> spent of <b id="bud-total">$0</b> budget</span>
+      </div>
+      <div class="budget-bar-track"><div class="budget-bar-fill" id="budget-bar" style="width:0%"></div></div>
+      <div class="budget-meta">
+        <span class="budget-status" id="budget-status-label">Set a budget in settings</span>
+        <span class="budget-status" id="budget-remaining"></span>
+      </div>
+    </div>
+
+    <div class="section-label">Recent expenses</div>
+    <div class="table-section">
+      <table>
+        <thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Client / Project</th><th>Paid by</th><th>Amount</th></tr></thead>
+        <tbody id="recent-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ADD EXPENSE -->
+  <div class="section" id="section-add">
+    <div class="form-section">
+      <div class="form-head">Log an expense</div>
+      <div class="form-grid">
+        <div class="form-group"><label>Date</label><input type="date" id="f-date"></div>
+        <div class="form-group"><label>Amount ($)</label><input type="number" id="f-amount" placeholder="0.00" step="0.01" min="0"></div>
+        <div class="form-group">
+          <label>Category</label>
+          <select id="f-category">
+            <option value="">Select category</option>
+            <option value="Ads">Ads</option>
+            <option value="Tools">Tools / Software</option>
+            <option value="Hosting">Hosting / Infrastructure</option>
+            <option value="Contractors">Contractors</option>
+            <option value="Software">Subscriptions</option>
+            <option value="Ops">Operations</option>
+            <option value="Misc">Misc</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Paid by</label>
+          <select id="f-paidby">
+            <option value="">Select person</option>
+            <option value="Wes">Wes</option>
+            <option value="Shane">Shane</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Description</label><input type="text" id="f-desc" placeholder="What was this for?"></div>
+        <div class="form-group"><label>Client / Project</label><input type="text" id="f-client" placeholder="Lusky, Beautella, internal..."></div>
+        <div class="form-group span2"><label>Notes / Receipt</label><textarea id="f-notes" placeholder="Receipt link, invoice #, anything else..."></textarea></div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" onclick="addExpense()">Add Expense</button>
+        <button class="btn btn-ghost" onclick="clearForm()">Clear</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOG -->
+  <div class="section" id="section-log">
+    <div class="table-section">
+      <div class="table-header">
+        <span class="table-title">All expenses</span>
+        <div class="filter-row">
+          <select id="filter-category" onchange="renderLog()">
+            <option value="all">All categories</option>
+            <option value="Ads">Ads</option>
+            <option value="Tools">Tools</option>
+            <option value="Hosting">Hosting</option>
+            <option value="Contractors">Contractors</option>
+            <option value="Software">Subscriptions</option>
+            <option value="Ops">Operations</option>
+            <option value="Misc">Misc</option>
+          </select>
+          <select id="filter-person" onchange="renderLog()">
+            <option value="all">Both</option>
+            <option value="Wes">Wes only</option>
+            <option value="Shane">Shane only</option>
+          </select>
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Client</th><th>Notes</th><th>Paid by</th><th>Amount</th><th></th></tr></thead>
+        <tbody id="log-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- REPORTS -->
+  <div class="section" id="section-reports">
+    <div class="month-tabs" id="report-month-tabs"></div>
+    <div class="summary-grid" id="report-summary"></div>
+    <div class="report-grid">
+      <div class="report-card"><div class="report-card-title">By category</div><div id="cat-bars"></div></div>
+      <div class="report-card"><div class="report-card-title">By person</div><div id="person-bars"></div></div>
+    </div>
+    <div class="report-card" style="margin-bottom:16px">
+      <div class="report-card-title">Monthly breakdown</div>
+      <div id="monthly-breakdown"></div>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="section" id="section-settings">
+    <div class="settings-section">
+      <div class="settings-title">Budget</div>
+      <div class="settings-row">
+        <div><div class="settings-label">Monthly budget</div><div class="settings-sub">Tracks against spend on the dashboard bar</div></div>
+        <input type="number" id="s-budget" placeholder="e.g. 2000" style="width:130px" oninput="saveSetting('budget', this.value)">
+      </div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-title">Data</div>
+      <div class="settings-row">
+        <div><div class="settings-label">Export to CSV</div><div class="settings-sub">Download all expenses as a spreadsheet</div></div>
+        <button class="btn btn-ghost" onclick="exportCSV()">Export CSV</button>
+      </div>
+      <div class="settings-row">
+        <div><div class="settings-label">Clear all data</div><div class="settings-sub" style="color:var(--danger)">Permanently deletes all logged expenses</div></div>
+        <button class="btn btn-danger" onclick="clearAll()">Clear all</button>
+      </div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-title">Storage</div>
+      <div class="settings-row">
+        <div><div class="settings-label">localStorage (per-device)</div><div class="settings-sub">Data is saved in the browser on this device. Both Wes and Shane need to be on the same hosted URL — data syncs via the shared JSON file on GitHub. See README for the sync setup.</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ─── STATE ───────────────────────────────────────────────────────────
+  let expenses = [];
+  let settings = { budget: 0 };
+  let globalMonth = 'all';
+  let reportMonth = 'all';
+
+  // ─── STORAGE (localStorage) ──────────────────────────────────────────
+  function load() {
+    try { const d = localStorage.getItem('ci-expenses'); if (d) expenses = JSON.parse(d); } catch(e) { expenses = []; }
+    try { const d = localStorage.getItem('ci-settings'); if (d) settings = { ...settings, ...JSON.parse(d) }; } catch(e) {}
+    applySettings();
+    populateMonthDropdown();
+    renderAll();
+  }
+
+  function save() {
+    try { localStorage.setItem('ci-expenses', JSON.stringify(expenses)); } catch(e) {}
+  }
+
+  function saveSetting(key, val) {
+    settings[key] = key === 'budget' ? parseFloat(val) || 0 : val;
+    try { localStorage.setItem('ci-settings', JSON.stringify(settings)); } catch(e) {}
+    renderAll();
+  }
+
+  // ─── HELPERS ─────────────────────────────────────────────────────────
+  const fmt    = v => '$' + Number(v).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  const fmtK   = v => v >= 1000 ? '$' + (v / 1000).toFixed(1) + 'k' : fmt(v);
+  const catCls = c => ({ Ads:'cat-ads', Tools:'cat-tools', Hosting:'cat-hosting', Contractors:'cat-contractors', Software:'cat-software', Ops:'cat-ops', Misc:'cat-misc' }[c] || 'cat-misc');
+  const getMonths     = () => [...new Set(expenses.map(e => e.date.slice(0,7)))].sort().reverse();
+  const parseMonth    = ym => { if (!ym) return ''; const [y,m] = ym.split('-'); return new Date(y, m-1).toLocaleDateString('en-US', { month:'short', year:'numeric' }); };
+  const filterByMonth = (m, list) => m === 'all' ? list : list.filter(e => e.date.startsWith(m));
+  const filterGlobal  = list => filterByMonth(globalMonth, list);
+
+  // ─── TABS ─────────────────────────────────────────────────────────────
+  function switchTab(id) {
+    const ids = ['dashboard','add','log','reports','settings'];
+    document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', ids[i] === id));
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.getElementById('section-' + id).classList.add('active');
+    if (id === 'reports') renderReports();
+    if (id === 'log')     renderLog();
+  }
+
+  // ─── GLOBAL MONTH ─────────────────────────────────────────────────────
+  function setGlobalMonth(v) { globalMonth = v; renderAll(); }
+
+  function populateMonthDropdown() {
+    const sel = document.getElementById('month-select-global');
+    const months = getMonths();
+    sel.innerHTML = '<option value="all">All time</option>' +
+      months.map(m => `<option value="${m}">${parseMonth(m)}</option>`).join('');
+    if (globalMonth !== 'all') sel.value = globalMonth;
+  }
+
+  // ─── ADD EXPENSE ──────────────────────────────────────────────────────
+  function addExpense() {
+    const date     = document.getElementById('f-date').value;
+    const amount   = parseFloat(document.getElementById('f-amount').value);
+    const category = document.getElementById('f-category').value;
+    const paidby   = document.getElementById('f-paidby').value;
+    const desc     = document.getElementById('f-desc').value.trim();
+    const client   = document.getElementById('f-client').value.trim();
+    const notes    = document.getElementById('f-notes').value.trim();
+    if (!date || !amount || !category || !paidby || !desc) { showToast('Fill in all required fields', 'error'); return; }
+    expenses.unshift({ id: Date.now(), date, amount, category, paidby, desc, client, notes });
+    save(); populateMonthDropdown(); clearForm(); renderAll();
+    showToast('Expense added', 'success');
+    switchTab('dashboard');
+  }
+
+  function clearForm() {
+    document.getElementById('f-date').value = new Date().toISOString().slice(0,10);
+    ['f-amount','f-desc','f-client','f-notes'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('f-category').value = '';
+    document.getElementById('f-paidby').value = '';
+  }
+
+  // ─── DELETE ───────────────────────────────────────────────────────────
+  function deleteExpense(id) {
+    if (!confirm('Delete this expense?')) return;
+    expenses = expenses.filter(e => e.id !== id);
+    save(); populateMonthDropdown(); renderAll();
+    showToast('Expense deleted');
+  }
+
+  // ─── DASHBOARD ────────────────────────────────────────────────────────
+  function renderDashboard() {
+    const data   = filterGlobal(expenses);
+    const total  = data.reduce((a,e) => a + e.amount, 0);
+    const wesT   = data.filter(e => e.paidby === 'Wes').reduce((a,e) => a + e.amount, 0);
+    const shaneT = data.filter(e => e.paidby === 'Shane').reduce((a,e) => a + e.amount, 0);
+
+    document.getElementById('stat-total').textContent     = fmtK(total);
+    document.getElementById('stat-wes').textContent       = fmtK(wesT);
+    document.getElementById('stat-shane').textContent     = fmtK(shaneT);
+    document.getElementById('stat-count').textContent     = data.length;
+    document.getElementById('stat-wes-pct').textContent   = total ? Math.round(wesT   / total * 100) + '% of total' : '—';
+    document.getElementById('stat-shane-pct').textContent = total ? Math.round(shaneT / total * 100) + '% of total' : '—';
+    document.getElementById('stat-period').textContent    = globalMonth === 'all' ? 'all time' : parseMonth(globalMonth);
+
+    const now      = new Date().toISOString().slice(0,7);
+    const budMonth = globalMonth !== 'all' ? globalMonth : now;
+    const budData  = expenses.filter(e => e.date.startsWith(budMonth));
+    const budSpent = budData.reduce((a,e) => a + e.amount, 0);
+    const bud      = settings.budget || 0;
+    const pct      = bud ? Math.min(budSpent / bud * 100, 100) : 0;
+
+    document.getElementById('bud-spent').textContent  = fmt(budSpent);
+    document.getElementById('bud-total').textContent  = bud ? fmt(bud) : 'not set';
+    const bar = document.getElementById('budget-bar');
+    bar.style.width  = pct + '%';
+    bar.className    = 'budget-bar-fill' + (pct >= 100 ? ' danger' : pct >= 75 ? ' warn' : '');
+    document.getElementById('budget-status-label').textContent = !bud ? 'Set a budget in settings' : pct >= 100 ? '🔴 Over budget' : pct >= 75 ? '🟡 Approaching limit' : '🟢 On track';
+    document.getElementById('budget-remaining').textContent    = bud && pct < 100 ? fmt(bud - budSpent) + ' remaining' : '';
+
+    const recent = data.slice(0, 8);
+    const tbody  = document.getElementById('recent-tbody');
+    if (!recent.length) { tbody.innerHTML = '<tr><td colspan="6" class="empty-state">No expenses yet — hit "+ Add Expense" to get started</td></tr>'; return; }
+    tbody.innerHTML = recent.map(e => `
+      <tr>
+        <td style="color:var(--muted);font-size:11px;white-space:nowrap">${e.date}</td>
+        <td style="font-weight:500">${e.desc}</td>
+        <td><span class="${catCls(e.category)}">${e.category}</span></td>
+        <td style="color:var(--muted);font-size:11px">${e.client || '—'}</td>
+        <td><span class="badge badge-${e.paidby.toLowerCase()}">${e.paidby}</span></td>
+        <td class="amount-cell">${fmt(e.amount)}</td>
+      </tr>`).join('');
+  }
+
+  // ─── LOG ──────────────────────────────────────────────────────────────
+  function renderLog() {
+    const cat    = document.getElementById('filter-category').value;
+    const person = document.getElementById('filter-person').value;
+    let data = filterGlobal(expenses);
+    if (cat    !== 'all') data = data.filter(e => e.category === cat);
+    if (person !== 'all') data = data.filter(e => e.paidby   === person);
+    const tbody = document.getElementById('log-tbody');
+    if (!data.length) { tbody.innerHTML = '<tr><td colspan="8" class="empty-state">No expenses match filters</td></tr>'; return; }
+    tbody.innerHTML = data.map(e => `
+      <tr>
+        <td style="color:var(--muted);font-size:11px;white-space:nowrap">${e.date}</td>
+        <td style="font-weight:500">${e.desc}</td>
+        <td><span class="${catCls(e.category)}">${e.category}</span></td>
+        <td style="color:var(--muted);font-size:11px">${e.client || '—'}</td>
+        <td style="color:var(--muted);font-size:11px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${e.notes||''}">${e.notes || '—'}</td>
+        <td><span class="badge badge-${e.paidby.toLowerCase()}">${e.paidby}</span></td>
+        <td class="amount-cell">${fmt(e.amount)}</td>
+        <td><button class="btn btn-danger" onclick="deleteExpense(${e.id})">✕</button></td>
+      </tr>`).join('');
+  }
+
+  // ─── REPORTS ─────────────────────────────────────────────────────────
+  function renderReports() {
+    const months = getMonths();
+    document.getElementById('report-month-tabs').innerHTML =
+      '<button class="month-btn' + (reportMonth==='all'?' active':'') + '" onclick="setReportMonth(\'all\')">All time</button>' +
+      months.map(m => `<button class="month-btn${reportMonth===m?' active':''}" onclick="setReportMonth('${m}')">${parseMonth(m)}</button>`).join('');
+
+    const data   = reportMonth === 'all' ? [...expenses] : expenses.filter(e => e.date.startsWith(reportMonth));
+    const total  = data.reduce((a,e) => a + e.amount, 0);
+    const wesT   = data.filter(e => e.paidby==='Wes').reduce((a,e)   => a + e.amount, 0);
+    const shaneT = data.filter(e => e.paidby==='Shane').reduce((a,e) => a + e.amount, 0);
+
+    document.getElementById('report-summary').innerHTML = `
+      <div class="stat-card primary"><div class="stat-label">Total</div><div class="stat-value">${fmtK(total)}</div></div>
+      <div class="stat-card wes"><div class="stat-label">Wes</div><div class="stat-value">${fmtK(wesT)}</div><div class="stat-sub">${total ? Math.round(wesT/total*100)+'%' : '—'}</div></div>
+      <div class="stat-card shane"><div class="stat-label">Shane</div><div class="stat-value">${fmtK(shaneT)}</div><div class="stat-sub">${total ? Math.round(shaneT/total*100)+'%' : '—'}</div></div>
+      <div class="stat-card"><div class="stat-label">Avg / expense</div><div class="stat-value">${data.length ? fmtK(total/data.length) : '$0'}</div></div>`;
+
+    const cats = {};
+    data.forEach(e => { cats[e.category] = (cats[e.category]||0) + e.amount; });
+    const sortedCats = Object.entries(cats).sort((a,b) => b[1]-a[1]);
+    const maxCat = sortedCats[0]?.[1] || 1;
+    const catColors = { Ads:'#c084fc', Tools:'#6cb8e8', Hosting:'#4ade80', Contractors:'#fb923c', Software:'#a78bfa', Ops:'#f472b6', Misc:'#6a7080' };
+    document.getElementById('cat-bars').innerHTML = sortedCats.length
+      ? sortedCats.map(([cat, amt]) => `<div class="bar-row"><span class="bar-row-label ${catCls(cat)}">${cat}</span><div class="bar-track"><div class="bar-fill" style="width:${Math.round(amt/maxCat*100)}%;background:${catColors[cat]||'#6a7080'}"></div></div><span class="bar-row-val">${fmt(amt)}</span></div>`).join('')
+      : '<div style="color:var(--muted);font-size:12px;padding:8px 0">No data for this period</div>';
+
+    const maxP = Math.max(wesT, shaneT, 1);
+    document.getElementById('person-bars').innerHTML = `
+      <div class="bar-row"><span class="bar-row-label" style="color:var(--wes);font-weight:700">Wes</span><div class="bar-track"><div class="bar-fill" style="width:${Math.round(wesT/maxP*100)}%;background:var(--wes)"></div></div><span class="bar-row-val">${fmt(wesT)}</span></div>
+      <div class="bar-row"><span class="bar-row-label" style="color:var(--shane);font-weight:700">Shane</span><div class="bar-track"><div class="bar-fill" style="width:${Math.round(shaneT/maxP*100)}%;background:var(--shane)"></div></div><span class="bar-row-val">${fmt(shaneT)}</span></div>`;
+
+    const mm = {};
+    expenses.forEach(e => {
+      const m = e.date.slice(0,7);
+      if (!mm[m]) mm[m] = { total:0, wes:0, shane:0, count:0 };
+      mm[m].total += e.amount; mm[m][e.paidby.toLowerCase()] += e.amount; mm[m].count++;
+    });
+    const rows = Object.entries(mm).sort((a,b) => b[0].localeCompare(a[0]));
+    document.getElementById('monthly-breakdown').innerHTML = rows.length ? `
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr>${['Month','Wes','Shane','Total','Items'].map((h,i) => `<th style="text-align:${i===0?'left':'right'};padding:6px 4px;font-size:10px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;font-weight:600;border-bottom:1px solid var(--border)">${h}</th>`).join('')}</tr></thead>
+        <tbody>${rows.map(([m,v]) => `<tr>
+          <td style="padding:9px 4px;border-bottom:1px solid var(--border);font-weight:600">${parseMonth(m)}</td>
+          <td style="padding:9px 4px;border-bottom:1px solid var(--border);text-align:right;color:var(--wes);font-weight:600">${fmt(v.wes)}</td>
+          <td style="padding:9px 4px;border-bottom:1px solid var(--border);text-align:right;color:var(--shane);font-weight:600">${fmt(v.shane)}</td>
+          <td style="padding:9px 4px;border-bottom:1px solid var(--border);text-align:right;color:var(--blue-light);font-weight:800">${fmt(v.total)}</td>
+          <td style="padding:9px 4px;border-bottom:1px solid var(--border);text-align:right;color:var(--muted)">${v.count}</td>
+        </tr>`).join('')}</tbody>
+      </table>` : '<div style="color:var(--muted);font-size:12px;padding:8px 0">No data yet</div>';
+  }
+
+  function setReportMonth(m) { reportMonth = m; renderReports(); }
+
+  // ─── SETTINGS ────────────────────────────────────────────────────────
+  function applySettings() { document.getElementById('s-budget').value = settings.budget || ''; }
+
+  // ─── EXPORT ──────────────────────────────────────────────────────────
+  function exportCSV() {
+    if (!expenses.length) { showToast('No expenses to export', 'error'); return; }
+    const headers = ['Date','Description','Category','Client','Paid by','Amount','Notes'];
+    const rows    = expenses.map(e => [e.date, `"${e.desc}"`, e.category, `"${e.client||''}"`, e.paidby, e.amount, `"${e.notes||''}"`]);
+    const csv     = [headers, ...rows].map(r => r.join(',')).join('\n');
+    const a = document.createElement('a');
+    a.href     = 'data:text/csv,' + encodeURIComponent(csv);
+    a.download = 'catalyst-intelligence-expenses.csv';
+    a.click();
+    showToast('CSV exported', 'success');
+  }
+
+  // ─── CLEAR ALL ───────────────────────────────────────────────────────
+  function clearAll() {
+    if (!confirm('Delete ALL expenses permanently? This cannot be undone.')) return;
+    expenses = []; save(); populateMonthDropdown(); renderAll();
+    showToast('All data cleared');
+  }
+
+  // ─── TOAST ───────────────────────────────────────────────────────────
+  let toastTimer;
+  function showToast(msg, type='') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className   = 'toast show' + (type ? ' ' + type : '');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.className = 'toast', 2400);
+  }
+
+  // ─── INIT ────────────────────────────────────────────────────────────
+  function renderAll() { renderDashboard(); }
+  clearForm();
+  load();
+</script>
+</body>
+</html>
